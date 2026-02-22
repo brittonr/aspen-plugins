@@ -14,7 +14,7 @@ resolver = "3"
 
 [workspace.dependencies]
 # Aspen dependencies (from aspen monorepo)
-aspen-client-api = { git = "https://github.com/brittonr/aspen.git", branch = "main" }
+aspen-client-api = { git = "https://github.com/brittonr/aspen.git", branch = "main", default-features = false }
 aspen-wasm-guest-sdk = { git = "https://github.com/brittonr/aspen.git", branch = "main" }
 aspen-plugin-api = { git = "https://github.com/brittonr/aspen.git", branch = "main" }
 
