@@ -1,0 +1,17 @@
+[package]
+name = "aspen-forge-plugin"
+version = "0.1.0"
+edition = "2024"
+description = "WASM guest plugin reimplementing the forge handler (Phase 1: repos, objects, refs)"
+license = "AGPL-3.0-or-later"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+aspen-wasm-guest-sdk = { workspace = true }
+aspen-client-api = { workspace = true, default-features = false }
+serde = { workspace = true }
+serde_json = { workspace = true }
+blake3 = { workspace = true }
+hex = { workspace = true }

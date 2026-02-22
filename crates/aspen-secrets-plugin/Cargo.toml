@@ -1,0 +1,17 @@
+[package]
+name = "aspen-secrets-plugin"
+version = "0.1.0"
+edition = "2024"
+description = "WASM guest plugin for the secrets engine (KV v2 + Transit)"
+license = "AGPL-3.0-or-later"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+aspen-wasm-guest-sdk = { workspace = true }
+aspen-client-api = { workspace = true, default-features = false }
+serde = { workspace = true }
+serde_json = { workspace = true }
+hex = { workspace = true }
+base64 = { workspace = true }
