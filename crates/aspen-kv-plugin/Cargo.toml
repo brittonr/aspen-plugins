@@ -1,8 +1,8 @@
 [package]
-name = "aspen-hooks-plugin"
+name = "aspen-kv-plugin"
 version = "0.1.0"
 edition = "2024"
-description = "Aspen WASM plugin: hooks handler"
+description = "Aspen WASM plugin: kv handler"
 license = "AGPL-3.0-or-later"
 
 [lib]

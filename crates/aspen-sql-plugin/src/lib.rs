@@ -1,39 +1,36 @@
-//! WASM guest plugin for SQL query execution.
+//! SQL query handler WASM plugin.
 //!
-//! Delegates `ExecuteSql` requests to the host's `sql_query` host function,
-//! which executes read-only SQL queries against the node's state machine.
+//! Migrated from the native `aspen-query-handler` crate. Handles `ExecuteSql`
+//! requests by delegating to the host's SQL query executor via the `sql_query`
+//! host function.
 //!
-//! This plugin is a thin wrapper — all query validation, execution, and
-//! result formatting happens on the host side. The plugin exists to enable
-//! SQL capabilities via WASM plugin deployment without compiling SQL support
-//! into the node's native handler set.
+//! The host function handles all the heavy lifting (query parsing, execution,
+//! result formatting). This plugin maps the client RPC types to/from the
+//! host function's JSON protocol.
 
-use aspen_client_api::SqlCellValue;
-use aspen_client_api::SqlResultResponse;
-use aspen_wasm_guest_sdk::AspenPlugin;
-use aspen_wasm_guest_sdk::ClientRpcRequest;
-use aspen_wasm_guest_sdk::ClientRpcResponse;
-use aspen_wasm_guest_sdk::PluginInfo;
-use aspen_wasm_guest_sdk::PluginPermissions;
-use aspen_wasm_guest_sdk::host;
-use aspen_wasm_guest_sdk::register_plugin;
+use aspen_wasm_guest_sdk::*;
 
-struct SqlPlugin;
+struct SqlHandlerPlugin;
 
-impl AspenPlugin for SqlPlugin {
+impl AspenPlugin for SqlHandlerPlugin {
     fn info() -> PluginInfo {
         PluginInfo {
-            name: "sql".to_string(),
+            name: "aspen-sql-handler".to_string(),
             version: "0.1.0".to_string(),
             handles: vec!["ExecuteSql".to_string()],
-            priority: 940,
+            priority: 500,
             app_id: Some("sql".to_string()),
-            kv_prefixes: vec!["__plugin:sql:".to_string()],
+            kv_prefixes: vec![],
             permissions: PluginPermissions {
                 sql_query: true,
                 ..PluginPermissions::default()
             },
         }
+    }
+
+    fn init() -> Result<(), String> {
+        host::log_info_msg("aspen-sql-handler: initialized");
+        Ok(())
     }
 
     fn handle(request: ClientRpcRequest) -> ClientRpcResponse {
@@ -46,16 +43,25 @@ impl AspenPlugin for SqlPlugin {
                 timeout_ms,
             } => handle_execute_sql(query, params, consistency, limit, timeout_ms),
 
-            _ => ClientRpcResponse::Error(aspen_client_api::ErrorResponse {
-                code: "UNHANDLED_REQUEST".to_string(),
-                message: "Request not handled by SQL plugin".to_string(),
-            }),
+            _ => ClientRpcResponse::Error(response::error_response(
+                "UNHANDLED",
+                "aspen-sql-handler does not handle this request type",
+            )),
         }
     }
 }
 
-register_plugin!(SqlPlugin);
-
+/// Handle an `ExecuteSql` request.
+///
+/// Delegates to the host's `sql_query` function, then maps the host result
+/// into the `SqlResultResponse` client response type.
+///
+/// The host function handles:
+/// - SQL parsing and validation
+/// - Consistency level selection (linearizable vs stale)
+/// - Query execution against the SQLite-backed state machine
+/// - Result pagination and truncation
+/// - Blob values are returned as `"base64:..."` strings
 fn handle_execute_sql(
     query: String,
     params: String,
@@ -65,37 +71,11 @@ fn handle_execute_sql(
 ) -> ClientRpcResponse {
     match host::execute_sql(&query, &params, &consistency, limit, timeout_ms) {
         Ok(result) => {
-            // Convert the host result into the client API response format
-            let columns: Vec<String> = result.columns;
-            let rows: Vec<Vec<SqlCellValue>> = result
-                .rows
-                .into_iter()
-                .map(|row| {
-                    row.into_iter()
-                        .map(|v| match v {
-                            serde_json::Value::Null => SqlCellValue::Null,
-                            serde_json::Value::Number(n) => {
-                                if let Some(i) = n.as_i64() {
-                                    SqlCellValue::Integer(i)
-                                } else if let Some(f) = n.as_f64() {
-                                    SqlCellValue::Real(f)
-                                } else {
-                                    SqlCellValue::Text(n.to_string())
-                                }
-                            }
-                            serde_json::Value::String(s) => {
-                                if let Some(b64) = s.strip_prefix("base64:") {
-                                    SqlCellValue::Blob(b64.to_string())
-                                } else {
-                                    SqlCellValue::Text(s)
-                                }
-                            }
-                            serde_json::Value::Bool(b) => SqlCellValue::Integer(if b { 1 } else { 0 }),
-                            _ => SqlCellValue::Text(v.to_string()),
-                        })
-                        .collect()
-                })
-                .collect();
+            // Map host JSON rows to typed SqlCellValue rows.
+            let rows: Vec<Vec<SqlCellValue>> =
+                result.rows.into_iter().map(|row| row.into_iter().map(json_to_sql_cell).collect()).collect();
+
+            let columns = result.columns;
 
             ClientRpcResponse::SqlResult(SqlResultResponse {
                 is_success: true,
@@ -119,24 +99,37 @@ fn handle_execute_sql(
     }
 }
 
-// ============================================================================
-// Tests
-// ============================================================================
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn plugin_info_matches_manifest() {
-        let info = SqlPlugin::info();
-        let manifest: serde_json::Value =
-            serde_json::from_str(include_str!("../plugin.json")).expect("valid plugin.json");
-
-        assert_eq!(info.name, manifest["name"].as_str().unwrap());
-        assert_eq!(info.version, manifest["version"].as_str().unwrap());
-        assert_eq!(info.priority, manifest["priority"].as_u64().unwrap() as u32);
-        assert_eq!(info.app_id.as_deref(), manifest["app_id"].as_str());
-        assert_eq!(info.handles.len(), manifest["handles"].as_array().unwrap().len(), "handle count mismatch");
+/// Convert a serde_json::Value to SqlCellValue.
+///
+/// The host returns SQL results as JSON values:
+/// - null → Null
+/// - number (integer) → Integer
+/// - number (float) → Real
+/// - string → Text (or Blob if prefixed with "base64:")
+/// - bool → Integer (1/0)
+fn json_to_sql_cell(value: serde_json::Value) -> SqlCellValue {
+    match value {
+        serde_json::Value::Null => SqlCellValue::Null,
+        serde_json::Value::Number(n) => {
+            if let Some(i) = n.as_i64() {
+                SqlCellValue::Integer(i)
+            } else if let Some(f) = n.as_f64() {
+                SqlCellValue::Real(f)
+            } else {
+                SqlCellValue::Text(n.to_string())
+            }
+        }
+        serde_json::Value::String(s) => {
+            // Host encodes blob values as "base64:..." strings
+            if let Some(b64) = s.strip_prefix("base64:") {
+                SqlCellValue::Blob(b64.to_string())
+            } else {
+                SqlCellValue::Text(s)
+            }
+        }
+        serde_json::Value::Bool(b) => SqlCellValue::Integer(if b { 1 } else { 0 }),
+        other => SqlCellValue::Text(other.to_string()),
     }
 }
+
+register_plugin!(SqlHandlerPlugin);

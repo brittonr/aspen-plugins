@@ -1,16 +1,16 @@
 {
-  "name": "hooks",
+  "name": "aspen-hooks-handler",
   "version": "0.1.0",
+  "description": "Hook system handler — list handlers, get metrics, trigger events. Replaces native aspen-hooks-handler.",
   "handles": [
     "HookList",
     "HookGetMetrics",
     "HookTrigger"
   ],
-  "priority": 950,
+  "priority": 570,
   "app_id": "hooks",
-  "kv_prefixes": ["__hooks:"],
+  "kv_prefixes": [],
   "permissions": {
-    "kv_read": true,
-    "kv_write": true
+    "hooks": true
   }
 }

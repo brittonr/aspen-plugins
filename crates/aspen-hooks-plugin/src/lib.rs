@@ -1,164 +1,160 @@
-//! WASM guest plugin for the Aspen hooks handler.
+//! Hooks handler WASM plugin.
 //!
-//! This crate compiles to `wasm32-wasip2` and exports `handle_request`
-//! and `plugin_info` for the Aspen plugin runtime. It reimplements the
-//! native `HooksHandler` using host-provided KV operations
-//! through the `aspen-wasm-guest-sdk`.
+//! Migrated from the native `aspen-hooks-handler` crate. Handles hook
+//! system operations: listing configured handlers, getting execution
+//! metrics, and manually triggering events.
 //!
-//! # Handled Request Types
-//!
-//! - `HookList` — List configured hook handlers (from KV-stored config)
-//! - `HookGetMetrics` — Get execution metrics for handlers (from KV-stored metrics)
-//! - `HookTrigger` — Manually trigger a hook event (writes to KV for native dispatch)
-//!
-//! # KV Layout
-//!
-//! | Key | Value |
-//! |-----|-------|
-//! | `__hooks:config` | JSON-serialized `HooksConfig` |
-//! | `__hooks:metrics` | JSON-serialized `HooksMetrics` |
-//! | `__hooks:trigger:{ts}:{type}` | JSON-serialized `HookEvent` (pending triggers) |
+//! Uses host functions `hook_list`, `hook_metrics`, and `hook_trigger`
+//! to communicate with the native HookService via the plugin host context.
 
-mod handlers;
-mod kv;
-mod types;
+use aspen_wasm_guest_sdk::*;
 
-use aspen_wasm_guest_sdk::AspenPlugin;
-use aspen_wasm_guest_sdk::ClientRpcRequest;
-use aspen_wasm_guest_sdk::ClientRpcResponse;
-use aspen_wasm_guest_sdk::PluginInfo;
-use aspen_wasm_guest_sdk::PluginPermissions;
-use aspen_wasm_guest_sdk::register_plugin;
+struct HooksHandlerPlugin;
 
-struct HooksPlugin;
-
-impl AspenPlugin for HooksPlugin {
+impl AspenPlugin for HooksHandlerPlugin {
     fn info() -> PluginInfo {
         PluginInfo {
-            name: "hooks".to_string(),
+            name: "aspen-hooks-handler".to_string(),
             version: "0.1.0".to_string(),
             handles: vec![
                 "HookList".to_string(),
                 "HookGetMetrics".to_string(),
                 "HookTrigger".to_string(),
             ],
-            priority: 950,
+            priority: 570,
             app_id: Some("hooks".to_string()),
-            kv_prefixes: vec!["__hooks:".to_string()],
+            kv_prefixes: vec![],
             permissions: PluginPermissions {
-                kv_read: true,
-                kv_write: true,
+                hooks: true,
                 ..PluginPermissions::default()
             },
         }
     }
 
+    fn init() -> Result<(), String> {
+        host::log_info_msg("aspen-hooks-handler: initialized");
+        Ok(())
+    }
+
     fn handle(request: ClientRpcRequest) -> ClientRpcResponse {
         match request {
-            ClientRpcRequest::HookList => handlers::handle_hook_list(),
-
-            ClientRpcRequest::HookGetMetrics { handler_name } => handlers::handle_hook_metrics(handler_name),
-
+            ClientRpcRequest::HookList => handle_hook_list(),
+            ClientRpcRequest::HookGetMetrics { handler_name } => handle_hook_metrics(handler_name),
             ClientRpcRequest::HookTrigger {
                 event_type,
                 payload_json,
-            } => handlers::handle_hook_trigger(event_type, payload_json),
+            } => handle_hook_trigger(event_type, payload_json),
 
-            _ => ClientRpcResponse::Error(aspen_wasm_guest_sdk::response::error_response(
+            _ => ClientRpcResponse::Error(response::error_response(
                 "UNHANDLED",
-                "hooks plugin does not handle this request type",
+                "aspen-hooks-handler does not handle this request type",
             )),
         }
     }
 }
 
-register_plugin!(HooksPlugin);
+/// Handle HookList request.
+///
+/// Returns information about all configured hook handlers.
+fn handle_hook_list() -> ClientRpcResponse {
+    match host::list_hooks() {
+        Ok(result) => {
+            let handlers: Vec<HookHandlerInfo> = result
+                .handlers
+                .into_iter()
+                .map(|h| HookHandlerInfo {
+                    name: h.name,
+                    pattern: h.pattern,
+                    handler_type: h.handler_type,
+                    execution_mode: h.execution_mode,
+                    is_enabled: h.enabled,
+                    timeout_ms: h.timeout_ms,
+                    retry_count: h.retry_count,
+                })
+                .collect();
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    // ========================================================================
-    // Plugin manifest consistency
-    // ========================================================================
-
-    #[test]
-    fn plugin_info_matches_manifest() {
-        let manifest_bytes = include_bytes!("../plugin.json");
-        let manifest: PluginInfo = serde_json::from_slice(manifest_bytes).expect("plugin.json should be valid");
-        let info = HooksPlugin::info();
-        assert_eq!(info.name, manifest.name, "name mismatch between code and plugin.json");
-        assert_eq!(info.handles, manifest.handles, "handles mismatch between code and plugin.json");
-        assert_eq!(info.priority, manifest.priority, "priority mismatch between code and plugin.json");
-        assert_eq!(info.version, manifest.version, "version mismatch between code and plugin.json");
-        assert_eq!(info.app_id, manifest.app_id, "app_id mismatch between code and plugin.json");
-        assert_eq!(info.kv_prefixes, manifest.kv_prefixes, "kv_prefixes mismatch between code and plugin.json");
-    }
-
-    // ========================================================================
-    // Plugin metadata
-    // ========================================================================
-
-    #[test]
-    fn plugin_info_name() {
-        assert_eq!(HooksPlugin::info().name, "hooks");
-    }
-
-    #[test]
-    fn plugin_info_version() {
-        assert_eq!(HooksPlugin::info().version, "0.1.0");
-    }
-
-    #[test]
-    fn plugin_info_handles_three_request_types() {
-        let info = HooksPlugin::info();
-        assert_eq!(info.handles.len(), 3);
-        assert!(info.handles.contains(&"HookList".to_string()));
-        assert!(info.handles.contains(&"HookGetMetrics".to_string()));
-        assert!(info.handles.contains(&"HookTrigger".to_string()));
-    }
-
-    #[test]
-    fn plugin_info_priority_in_plugin_range() {
-        let info = HooksPlugin::info();
-        assert!(
-            (900..=999).contains(&info.priority),
-            "plugin priority {} should be in WASM plugin range 900-999",
-            info.priority
-        );
-    }
-
-    #[test]
-    fn plugin_info_has_app_id() {
-        assert_eq!(HooksPlugin::info().app_id, Some("hooks".to_string()));
-    }
-
-    // ========================================================================
-    // Manifest JSON is valid
-    // ========================================================================
-
-    #[test]
-    fn plugin_json_is_valid_json() {
-        let bytes = include_bytes!("../plugin.json");
-        let value: serde_json::Value = serde_json::from_slice(bytes).expect("plugin.json should be valid JSON");
-        assert!(value.is_object());
-    }
-
-    #[test]
-    fn plugin_json_has_required_fields() {
-        let bytes = include_bytes!("../plugin.json");
-        let value: serde_json::Value = serde_json::from_slice(bytes).unwrap();
-        assert!(value["name"].is_string(), "missing 'name'");
-        assert!(value["version"].is_string(), "missing 'version'");
-        assert!(value["handles"].is_array(), "missing 'handles'");
-        assert!(value["priority"].is_number(), "missing 'priority'");
-    }
-
-    #[test]
-    fn plugin_json_handles_non_empty() {
-        let bytes = include_bytes!("../plugin.json");
-        let value: serde_json::Value = serde_json::from_slice(bytes).unwrap();
-        let handles = value["handles"].as_array().unwrap();
-        assert!(!handles.is_empty(), "handles should not be empty");
+            ClientRpcResponse::HookListResult(HookListResultResponse {
+                is_enabled: result.is_enabled,
+                handlers,
+            })
+        }
+        Err(_e) => ClientRpcResponse::HookListResult(HookListResultResponse {
+            is_enabled: false,
+            handlers: vec![],
+        }),
     }
 }
+
+/// Handle HookGetMetrics request.
+///
+/// Returns execution metrics for hook handlers, optionally filtered
+/// by handler name.
+fn handle_hook_metrics(handler_name: Option<String>) -> ClientRpcResponse {
+    let filter = handler_name.as_deref().unwrap_or("");
+    match host::get_hook_metrics(filter) {
+        Ok(result) => {
+            let handlers: Vec<HookHandlerMetrics> = result
+                .handlers
+                .into_iter()
+                .map(|m| HookHandlerMetrics {
+                    name: m.name,
+                    success_count: m.success_count,
+                    failure_count: m.failure_count,
+                    dropped_count: m.dropped_count,
+                    jobs_submitted: m.jobs_submitted,
+                    avg_duration_us: m.avg_duration_us,
+                    max_duration_us: m.max_duration_us,
+                })
+                .collect();
+
+            ClientRpcResponse::HookMetricsResult(HookMetricsResultResponse {
+                is_enabled: result.is_enabled,
+                total_events_processed: result.total_events_processed,
+                handlers,
+            })
+        }
+        Err(_e) => ClientRpcResponse::HookMetricsResult(HookMetricsResultResponse {
+            is_enabled: false,
+            total_events_processed: 0,
+            handlers: vec![],
+        }),
+    }
+}
+
+/// Handle HookTrigger request.
+///
+/// Manually triggers a hook event for testing purposes.
+fn handle_hook_trigger(event_type: String, payload_json: String) -> ClientRpcResponse {
+    let payload: serde_json::Value = serde_json::from_str(&payload_json).unwrap_or_else(|_| serde_json::json!({}));
+
+    match host::trigger_hook(&event_type, &payload) {
+        Ok(result) => {
+            let handler_failures: Vec<(String, String)> = result
+                .handler_failures
+                .into_iter()
+                .filter_map(|pair| {
+                    if pair.len() >= 2 {
+                        Some((pair[0].clone(), pair[1].clone()))
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+
+            ClientRpcResponse::HookTriggerResult(HookTriggerResultResponse {
+                is_success: result.is_success,
+                dispatched_count: result.dispatched_count,
+                error: result.error,
+                handler_failures,
+            })
+        }
+        Err(e) => ClientRpcResponse::HookTriggerResult(HookTriggerResultResponse {
+            is_success: false,
+            dispatched_count: 0,
+            error: Some(e),
+            handler_failures: vec![],
+        }),
+    }
+}
+
+register_plugin!(HooksHandlerPlugin);

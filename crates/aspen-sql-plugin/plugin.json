@@ -1,23 +1,14 @@
 {
-  "name": "sql",
+  "name": "aspen-sql-handler",
   "version": "0.1.0",
-  "description": "SQL query execution plugin (read-only SELECT/WITH queries)",
-  "priority": 940,
-  "app_id": "sql",
+  "description": "SQL query handler — executes read-only SQL against the Aspen state machine. Replaces native aspen-query-handler.",
   "handles": [
     "ExecuteSql"
   ],
-  "kv_prefixes": ["__plugin:sql:"],
+  "priority": 500,
+  "app_id": "sql",
+  "kv_prefixes": [],
   "permissions": {
-    "kv_read": false,
-    "kv_write": false,
-    "sql_query": true,
-    "randomness": false,
-    "timers": false,
-    "hooks": false,
-    "signing": false,
-    "blob_read": false,
-    "blob_write": false,
-    "cluster_info": false
+    "sql_query": true
   }
 }
