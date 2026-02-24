@@ -43,6 +43,7 @@ impl AspenPlugin for ScheduledCleanup {
         PluginInfo {
             name: "scheduled-cleanup".to_string(),
             version: "0.1.0".to_string(),
+            description: Some("Periodic cleanup of expired entries via scheduled timers".to_string()),
             handles: vec!["Ping".to_string(), "ReadKey".to_string(), "WriteKey".to_string()],
             priority: 945,
             app_id: None,

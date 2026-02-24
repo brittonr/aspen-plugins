@@ -1,6 +1,11 @@
 {
   "name": "automerge",
   "version": "0.1.0",
+  "description": "Automerge CRDT document management",
+  "author": "Aspen Project",
+  "tags": ["automerge", "crdt", "collaboration"],
+  "min_api_version": "0.2.0",
+  "dependencies": [],
   "handles": [
     "AutomergeCreate",
     "AutomergeGet",

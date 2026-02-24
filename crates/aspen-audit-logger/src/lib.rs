@@ -34,6 +34,7 @@ impl AspenPlugin for AuditLogger {
         PluginInfo {
             name: "audit-logger".to_string(),
             version: "0.1.0".to_string(),
+            description: Some("Append-only audit log of KV write events via hook subscriptions".to_string()),
             handles: vec!["Ping".to_string(), "ReadKey".to_string()],
             priority: 960,
             app_id: None,

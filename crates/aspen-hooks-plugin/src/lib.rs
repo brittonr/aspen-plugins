@@ -16,6 +16,7 @@ impl AspenPlugin for HooksHandlerPlugin {
         PluginInfo {
             name: "aspen-hooks-handler".to_string(),
             version: "0.1.0".to_string(),
+            description: Some("Hook management — list, metrics, trigger".to_string()),
             handles: vec![
                 "HookList".to_string(),
                 "HookGetMetrics".to_string(),

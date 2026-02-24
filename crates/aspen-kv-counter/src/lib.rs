@@ -31,6 +31,7 @@ impl AspenPlugin for KvCounter {
         PluginInfo {
             name: "kv-counter".to_string(),
             version: "0.1.0".to_string(),
+            description: Some("Distributed counter using KV store with CAS for safe increments".to_string()),
             handles: vec!["WriteKey".to_string(), "ReadKey".to_string()],
             priority: 940,
             app_id: None,

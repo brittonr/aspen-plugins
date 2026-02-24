@@ -31,6 +31,7 @@ impl AspenPlugin for SecretsPlugin {
         PluginInfo {
             name: "secrets".to_string(),
             version: "0.1.0".to_string(),
+            description: Some("Secrets engine — KV v2 secrets and Transit encryption".to_string()),
             handles: vec![
                 // KV
                 "SecretsKvRead".to_string(),

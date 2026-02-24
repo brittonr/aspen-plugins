@@ -30,6 +30,7 @@ impl AspenPlugin for CoordinationPlugin {
         PluginInfo {
             name: "coordination".to_string(),
             version: "0.1.0".to_string(),
+            description: Some("Distributed coordination — locks, counters, semaphores, sequences, queues, leases, barriers, rate limiters".to_string()),
             handles: vec![
                 "LockAcquire".to_string(),
                 "LockTryAcquire".to_string(),

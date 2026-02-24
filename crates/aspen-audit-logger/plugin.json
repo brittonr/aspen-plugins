@@ -2,6 +2,10 @@
   "name": "audit-logger",
   "version": "0.1.0",
   "description": "Append-only audit log of KV write events via hook subscriptions",
+  "author": "Aspen Project",
+  "tags": ["audit", "logging", "compliance"],
+  "min_api_version": "0.2.0",
+  "dependencies": [],
   "handles": [
     "Ping",
     "ReadKey"

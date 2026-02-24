@@ -1,7 +1,11 @@
 {
   "name": "aspen-hooks-handler",
   "version": "0.1.0",
-  "description": "Hook system handler — list handlers, get metrics, trigger events. Replaces native aspen-hooks-handler.",
+  "description": "Hook management — list, metrics, trigger",
+  "author": "Aspen Project",
+  "tags": ["hooks", "events"],
+  "min_api_version": "0.2.0",
+  "dependencies": [],
   "handles": [
     "HookList",
     "HookGetMetrics",

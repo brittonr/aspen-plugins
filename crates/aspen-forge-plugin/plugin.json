@@ -1,6 +1,11 @@
 {
   "name": "forge",
   "version": "0.1.0",
+  "description": "Decentralized Git hosting — repos, refs, objects, issues, patches",
+  "author": "Aspen Project",
+  "tags": ["forge", "git", "scm"],
+  "min_api_version": "0.2.0",
+  "dependencies": [],
   "handles": [
     "ForgeCreateRepo",
     "ForgeGetRepo",

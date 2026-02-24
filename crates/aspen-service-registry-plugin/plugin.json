@@ -1,6 +1,11 @@
 {
   "name": "service-registry",
   "version": "0.1.0",
+  "description": "Service discovery and health monitoring",
+  "author": "Aspen Project",
+  "tags": ["services", "discovery", "health"],
+  "min_api_version": "0.2.0",
+  "dependencies": [],
   "handles": [
     "ServiceRegister",
     "ServiceDeregister",

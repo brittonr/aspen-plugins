@@ -23,6 +23,7 @@ impl AspenPlugin for ServiceRegistryPlugin {
         PluginInfo {
             name: "service-registry".to_string(),
             version: "0.1.0".to_string(),
+            description: Some("Service discovery and health monitoring".to_string()),
             handles: vec![
                 "ServiceRegister".to_string(),
                 "ServiceDeregister".to_string(),

@@ -37,6 +37,7 @@ impl AspenPlugin for KvHandlerPlugin {
         PluginInfo {
             name: "aspen-kv-handler".to_string(),
             version: "0.1.0".to_string(),
+            description: Some("Full CRUD, scan, batch, CAS, and conditional operations for the distributed KV store".to_string()),
             handles: vec![
                 "ReadKey".to_string(),
                 "WriteKey".to_string(),

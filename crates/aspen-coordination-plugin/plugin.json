@@ -1,7 +1,11 @@
 {
   "name": "coordination",
   "version": "0.1.0",
-  "description": "Distributed coordination primitives: locks, counters, sequences, rate limiters, barriers, semaphores, RW locks, and queues",
+  "description": "Distributed coordination — locks, counters, semaphores, sequences, queues, leases, barriers, rate limiters",
+  "author": "Aspen Project",
+  "tags": ["coordination", "distributed", "primitives"],
+  "min_api_version": "0.2.0",
+  "dependencies": [],
   "handles": [
     "LockAcquire", "LockTryAcquire", "LockRelease", "LockRenew",
     "CounterGet", "CounterIncrement", "CounterDecrement", "CounterAdd",

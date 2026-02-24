@@ -1,6 +1,11 @@
 {
   "name": "secrets",
   "version": "0.1.0",
+  "description": "Secrets engine — KV v2 secrets and Transit encryption",
+  "author": "Aspen Project",
+  "tags": ["secrets", "encryption", "security"],
+  "min_api_version": "0.2.0",
+  "dependencies": [],
   "handles": [
     "SecretsKvRead",
     "SecretsKvWrite",

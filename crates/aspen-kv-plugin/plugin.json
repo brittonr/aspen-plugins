@@ -1,7 +1,11 @@
 {
   "name": "aspen-kv-handler",
   "version": "0.1.0",
-  "description": "Key-Value handler — full KV CRUD, scan, batch, CAS, and conditional writes. Replaces native aspen-kv-handler.",
+  "description": "Full CRUD, scan, batch, CAS, and conditional operations for the distributed KV store",
+  "author": "Aspen Project",
+  "tags": ["kv", "storage", "core"],
+  "min_api_version": "0.2.0",
+  "dependencies": [],
   "handles": [
     "ReadKey",
     "WriteKey",

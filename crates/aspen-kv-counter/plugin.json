@@ -2,6 +2,10 @@
   "name": "kv-counter",
   "version": "0.1.0",
   "description": "Distributed counter using KV store with CAS for safe increments",
+  "author": "Aspen Project",
+  "tags": ["counter", "kv", "example"],
+  "min_api_version": "0.2.0",
+  "dependencies": [],
   "handles": [
     "WriteKey",
     "ReadKey"

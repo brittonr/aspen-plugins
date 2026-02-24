@@ -2,6 +2,10 @@
   "name": "scheduled-cleanup",
   "version": "0.1.0",
   "description": "Periodic cleanup of expired entries via scheduled timers",
+  "author": "Aspen Project",
+  "tags": ["cleanup", "timers", "maintenance"],
+  "min_api_version": "0.2.0",
+  "dependencies": [],
   "handles": [
     "Ping",
     "ReadKey",

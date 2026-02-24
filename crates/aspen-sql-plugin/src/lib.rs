@@ -17,6 +17,7 @@ impl AspenPlugin for SqlHandlerPlugin {
         PluginInfo {
             name: "aspen-sql-handler".to_string(),
             version: "0.1.0".to_string(),
+            description: Some("SQL query execution via host function delegation".to_string()),
             handles: vec!["ExecuteSql".to_string()],
             priority: 500,
             app_id: Some("sql".to_string()),

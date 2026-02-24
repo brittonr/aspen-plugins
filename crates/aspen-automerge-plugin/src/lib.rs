@@ -40,6 +40,7 @@ impl AspenPlugin for AutomergePlugin {
         PluginInfo {
             name: "automerge".to_string(),
             version: "0.1.0".to_string(),
+            description: Some("Automerge CRDT document management".to_string()),
             handles: vec![
                 "AutomergeCreate".to_string(),
                 "AutomergeGet".to_string(),

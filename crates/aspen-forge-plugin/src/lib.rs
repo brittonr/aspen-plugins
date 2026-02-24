@@ -30,6 +30,7 @@ impl AspenPlugin for ForgePlugin {
         PluginInfo {
             name: "forge".to_string(),
             version: "0.1.0".to_string(),
+            description: Some("Decentralized Git hosting — repos, refs, objects, issues, patches".to_string()),
             handles: vec![
                 // Repos
                 "ForgeCreateRepo".to_string(),
