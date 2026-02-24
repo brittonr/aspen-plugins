@@ -3,5 +3,8 @@ members = [
     "crates/aspen-hooks-plugin",
     "crates/aspen-kv-plugin",
     "crates/aspen-sql-plugin",
+    "crates/aspen-audit-logger",
+    "crates/aspen-kv-counter",
+    "crates/aspen-scheduled-cleanup",
 ]
 resolver = "3"
