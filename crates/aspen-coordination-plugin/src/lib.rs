@@ -21,6 +21,7 @@ use aspen_wasm_guest_sdk::ClientRpcRequest;
 use aspen_wasm_guest_sdk::ClientRpcResponse;
 use aspen_wasm_guest_sdk::PluginInfo;
 use aspen_wasm_guest_sdk::PluginPermissions;
+#[cfg(target_arch = "wasm32")]
 use aspen_wasm_guest_sdk::register_plugin;
 
 struct CoordinationPlugin;
@@ -333,6 +334,7 @@ impl AspenPlugin for CoordinationPlugin {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
 register_plugin!(CoordinationPlugin);
 
 #[cfg(test)]
