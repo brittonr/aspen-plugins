@@ -217,36 +217,36 @@ impl AspenPlugin for CoordinationPlugin {
             ClientRpcRequest::RWLockAcquireRead {
                 name,
                 holder_id,
-                ttl_ms: _,
+                ttl_ms,
                 timeout_ms,
-            } => rwlock::handle_acquire_read(name, holder_id, timeout_ms),
+            } => rwlock::handle_acquire_read(name, holder_id, ttl_ms, timeout_ms),
 
             ClientRpcRequest::RWLockTryAcquireRead {
                 name,
                 holder_id,
-                ttl_ms: _,
-            } => rwlock::handle_try_acquire_read(name, holder_id),
+                ttl_ms,
+            } => rwlock::handle_try_acquire_read(name, holder_id, ttl_ms),
 
             ClientRpcRequest::RWLockAcquireWrite {
                 name,
                 holder_id,
-                ttl_ms: _,
+                ttl_ms,
                 timeout_ms,
-            } => rwlock::handle_acquire_write(name, holder_id, timeout_ms),
+            } => rwlock::handle_acquire_write(name, holder_id, ttl_ms, timeout_ms),
 
             ClientRpcRequest::RWLockTryAcquireWrite {
                 name,
                 holder_id,
-                ttl_ms: _,
-            } => rwlock::handle_try_acquire_write(name, holder_id),
+                ttl_ms,
+            } => rwlock::handle_try_acquire_write(name, holder_id, ttl_ms),
 
             ClientRpcRequest::RWLockReleaseRead { name, holder_id } => rwlock::handle_release_read(name, holder_id),
 
             ClientRpcRequest::RWLockReleaseWrite {
                 name,
                 holder_id,
-                fencing_token: _,
-            } => rwlock::handle_release_write(name, holder_id),
+                fencing_token,
+            } => rwlock::handle_release_write(name, holder_id, fencing_token),
 
             ClientRpcRequest::RWLockDowngrade {
                 name,
