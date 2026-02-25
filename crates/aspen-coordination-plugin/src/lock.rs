@@ -87,6 +87,7 @@ pub fn handle_acquire(key: String, holder_id: String, ttl_ms: u64, timeout_ms: O
         // Determine if we can acquire
         let (next_token, can_acquire) = match &current {
             None => (1u64, true),
+            Some(entry) if entry.holder_id.is_empty() => (entry.fencing_token + 1, true), // Released
             Some(entry) if is_expired(entry) => (entry.fencing_token + 1, true),
             Some(entry) if entry.holder_id == holder_id => (entry.fencing_token, true), // Re-entrant
             Some(entry) => {
@@ -147,8 +148,18 @@ pub fn handle_release(key: String, holder_id: String, fencing_token: u64) -> Cli
         return lock_err(format!("fencing token mismatch: expected {}, got {fencing_token}", entry.fencing_token));
     }
 
-    match kv::delete(&k) {
-        Ok(()) => lock_ok(entry.fencing_token, holder_id, entry.deadline_ms),
+    // Preserve fencing token state — write a "released" entry instead of deleting.
+    // This ensures the next acquire increments the fencing token monotonically.
+    let released = LockEntry {
+        holder_id: String::new(),
+        fencing_token: entry.fencing_token,
+        acquired_at_ms: 0,
+        ttl_ms: 0,
+        deadline_ms: 0,
+    };
+    match kv::cas_json(&k, current_raw.as_deref(), &released) {
+        Ok(true) => lock_ok(entry.fencing_token, holder_id, entry.deadline_ms),
+        Ok(false) => lock_err("CAS conflict during release".to_string()),
         Err(e) => lock_err(e),
     }
 }
