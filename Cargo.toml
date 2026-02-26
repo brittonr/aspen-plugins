@@ -23,7 +23,7 @@ resolver = "3"
 # Aspen crates (sibling repos)
 aspen-wasm-guest-sdk = { path = "../aspen-wasm-guest-sdk/crates/aspen-wasm-guest-sdk" }
 aspen-client-api = { path = "../aspen/crates/aspen-client-api", default-features = false }
-aspen-plugin-api = { path = "../aspen-plugin-api/crates/aspen-plugin-api" }
+aspen-plugin-api = { path = "../aspen/crates/aspen-plugin-api" }
 
 # Third-party
 anyhow = "1"
